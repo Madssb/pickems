@@ -146,8 +146,9 @@ select{
 
 #privacy-notice {
     position: fixed;
-    right: 18px;
-    bottom: 18px;
+    top: 72px;
+    left: 50%;
+    transform: translateX(-50%);
     z-index: 20;
     display: grid;
     grid-template-columns: minmax(0, 1fr) auto;
@@ -211,8 +212,9 @@ select{
     #privacy-notice {
         grid-template-columns: 1fr;
         row-gap: 12px;
-        right: 12px;
-        bottom: 12px;
+        top: 18px;
+        left: 12px;
+        transform: none;
         width: calc(100vw - 24px);
         box-sizing: border-box;
     }
