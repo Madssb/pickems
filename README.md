@@ -20,6 +20,7 @@ The frontend reads its backend URL from `VITE_API_BASE_URL` in the repo-root `.e
 
 ```env
 VITE_API_BASE_URL=http://127.0.0.1:8000
+EMAIL_HASH_SECRET=replace-with-a-long-random-secret
 ```
 
 Run the FastAPI backend with `uv`:
@@ -50,4 +51,13 @@ FastAPI docs are available at:
 
 ```text
 http://127.0.0.1:8000/docs
+```
+
+## Email Privacy Migration
+
+Existing databases that still have `users.email` can be migrated to
+`users.email_hash` with:
+
+```bash
+psql "$DATABASE_URL" -v email_hash_secret="$EMAIL_HASH_SECRET" -f backend/migrations/001_store_email_hashes_only.sql
 ```

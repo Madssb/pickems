@@ -30,7 +30,6 @@ type LoginRequest = {
 
 type CurrentUser = {
   id: number,
-  email: string,
   display_name: string
 }
 
@@ -158,7 +157,6 @@ async function checkCurrentUser(): Promise<CurrentUser | null> {
     const user: CurrentUser = await response.json();
 
     console.log(user.id);
-    console.log(user.email);
     console.log(user.display_name);
     return user;
   } catch (error) {

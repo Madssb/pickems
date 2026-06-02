@@ -40,7 +40,6 @@ _pool: asyncpg.Pool | None = None
 
 class SessionUser(TypedDict):
     id: int
-    email: str
     display_name: str
 
 
@@ -94,24 +93,27 @@ async def instantiate_magic_token(user_id: int, token_hash: str) -> None:
     )
 
 
-async def get_or_create_user_id_by_email(email: str, display_name: str | None = None) -> int:
-    """Return the user id for an email, creating the user when missing."""
+async def get_or_create_user_id_by_email_hash(
+    email_hash: str,
+    display_name: str,
+) -> int:
+    """Return the user id for an email hash, creating the user when missing."""
     pool = await get_pool()
     return await pool.fetchval(
         """
         INSERT INTO users (
-            email,
+            email_hash,
             display_name
         )
         VALUES (
             $1,
-            COALESCE($2, $1)
+            $2
         )
-        ON CONFLICT (email) DO UPDATE
+        ON CONFLICT (email_hash) DO UPDATE
         SET display_name = EXCLUDED.display_name
         RETURNING id;
         """,
-        email,
+        email_hash,
         display_name,
     )
 
@@ -171,7 +173,6 @@ async def get_user_by_session(session_id: str) -> SessionUser | None:
         """
         SELECT
             users.id,
-            users.email,
             users.display_name
         FROM sessions
         JOIN users ON users.id = sessions.user_id
@@ -184,7 +185,6 @@ async def get_user_by_session(session_id: str) -> SessionUser | None:
         return None
     return {
         "id": row["id"],
-        "email": row["email"],
         "display_name": row["display_name"],
     }
 

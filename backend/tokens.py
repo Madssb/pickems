@@ -1,5 +1,18 @@
 import secrets
 import hashlib
+import hmac
+
+
+def normalize_email(email: str) -> str:
+    return email.strip().lower()
+
+
+def hash_email(email: str, secret: str) -> str:
+    return hmac.new(
+        secret.encode(),
+        normalize_email(email).encode(),
+        hashlib.sha256,
+    ).hexdigest()
 
 
 def generate_token():

@@ -19,7 +19,7 @@ from db import (
     consume_magic_link,
     create_session,
     delete_session,
-    get_or_create_user_id_by_email,
+    get_or_create_user_id_by_email_hash,
     get_user_predictions,
     get_user_by_session,
     instantiate_magic_token,
@@ -31,7 +31,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, RedirectResponse
 from pydantic import BaseModel, Field
 from dotenv import load_dotenv
-from tokens import generate_session_id, generate_token, hash_token
+from tokens import generate_session_id, generate_token, hash_email, hash_token, normalize_email
 import resend
 
 
@@ -46,6 +46,10 @@ RESEND_API_KEY = os.getenv("RESEND_API_KEY")
 if not RESEND_API_KEY:
     raise SystemExit("RESEND_API_KEY is not set")
 resend.api_key = RESEND_API_KEY
+
+EMAIL_HASH_SECRET = os.getenv("EMAIL_HASH_SECRET")
+if not EMAIL_HASH_SECRET:
+    raise SystemExit("EMAIL_HASH_SECRET is not set")
 
 def require_http_base_url(env_name: str) -> str:
     value = os.getenv(env_name)
@@ -110,7 +114,6 @@ class LoginRequest(BaseModel):
 
 class CurrentUserResponse(BaseModel):
     id: int
-    email: str
     display_name: str
 
 class SubmissionRequest(BaseModel):
@@ -139,7 +142,7 @@ class SubmissionResponse(BaseModel):
 async def request_link(payload: LoginRequest):
     """instantiate login url, send to specified email
     """
-    email = payload.email.lower()
+    email = normalize_email(payload.email)
     if APP_ENV != "production" and email not in dev_allowed_emails:
         raise HTTPException(status_code=403, detail="Email is not allowed in dev")
 
@@ -147,7 +150,8 @@ async def request_link(payload: LoginRequest):
     if not display_name:
         raise HTTPException(status_code=400, detail="Display name is required")
 
-    user_id = await get_or_create_user_id_by_email(email, display_name)
+    email_hash = hash_email(email, EMAIL_HASH_SECRET)
+    user_id = await get_or_create_user_id_by_email_hash(email_hash, display_name)
     token, token_hash = generate_token()
 
     await instantiate_magic_token(user_id, token_hash)
