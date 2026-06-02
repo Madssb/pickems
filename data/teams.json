@@ -1,26 +1,26 @@
 {
     "Dino Nuggets": {
-        "color": "green",
+        "prefix": "DN",
         "members": ["Dino", "Boaty", "61M", "Sick Nerd", "Mmorpg"]
     },
     "Westham Weasels": {
-        "color": "yellow",
+        "prefix": "WW",
         "members": ["Westham", "Greg", "Mika", "eliop14", "Faux"]
     },
     "Framed Friends": {
-        "color": "pink",
+        "prefix": "FF",
         "members": ["Framed", "Lake", "Pip", "Synq", "Alfie"]
     },
     "Rhys Rhinos": {
-        "color": "blue",
+        "prefix": "RR",
         "members": ["Rhys", "Torvesta", "Muts", "V the Victim", "C Engineer"]
     },
     "Purpp Rebels": {
-        "color": "purple",
+        "prefix": "PR",
         "members": ["Purpp", "Skiddler", "Skill Specs", "Coxie", "Mr Mammal"]
     },
     "Odablock Warriors": {
-        "color": "red",
+        "prefix": "OW",
         "members": ["Odablock", "dubiedobies", "Gnomonkey", "Raikesy", "EVScape"]
     }
 }

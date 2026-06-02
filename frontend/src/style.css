@@ -1,0 +1,146 @@
+body{
+    background-color: #2c2c2c;
+    color:  #e0e0e0;   
+}
+
+#app{
+    display: flex;
+    flex-direction: column;
+}
+
+.site-header {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    align-items: center;
+    width: 100%;
+}
+.site-header > h1 {
+    grid-column: 2;
+    justify-self: center;
+}
+#auth-panel {
+    grid-column: 3;
+    justify-self: end;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    column-gap: 10px;
+}
+
+/* login style rules */
+#show-login-button{
+    width: 60px;
+    height: 40px;
+}
+
+#login-overlay{
+    display: flex;
+    flex-direction: column;
+    width: 360px;
+    align-items: stretch;
+    align-self: center;
+    background-color: gray;
+    /* border-radius: 8px; */
+    border: 2px solid black;
+    row-gap: 10px;
+}
+
+[hidden] {
+    display: none !important;
+}
+#login-overlay-header h2 {
+    margin: 0;
+}
+#login-overlay-header{
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    /* align-items: center; */
+}
+#login-form{
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+}
+.login-form-element{
+    display: grid;
+    grid-template-columns: 110px 1fr;
+    column-gap: 10px;
+    align-items: center;
+}
+input{
+    background-color: rgb(158, 158, 158);
+}
+select{
+    background-color: rgb(158, 158, 158);
+}
+#login-button{
+    /* border-radius: 8px; */
+    background-color: transparent   ;
+}
+#close-login-button{
+    border-radius: 8px;
+    background-color: transparent;
+}
+
+#questions-panel{
+    display: flex;
+    flex-direction: column;
+    row-gap: 18px;
+}
+
+#submission-countdown{
+    text-align: center;
+}
+
+#save-status{
+    text-align: center;
+}
+
+#ranking-panel h2{
+    text-align: center;
+}
+
+.ranking-rows{
+    display: flex;
+    flex-direction: column;
+    row-gap: 6px;
+    align-items: center;
+}
+
+.ranking-row{
+    display: grid;
+    grid-template-columns: 40px 180px;
+    column-gap: 8px;
+    align-items: center;
+}
+
+.question-category h2{
+    margin-bottom: 8px;
+    text-align: center;
+}
+
+.question-category{
+    width: 100%;
+}
+
+.question-grid{
+    display: grid;
+    grid-template-columns: repeat(2, 300px);
+    justify-content: center;
+    row-gap: 10px;
+    column-gap: 40px;
+}
+
+.question-row{
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    row-gap: 4px;
+}
+
+@media (max-width: 700px) {
+    .question-grid{
+        grid-template-columns: 1fr;
+    }
+}

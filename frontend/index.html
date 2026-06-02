@@ -3,23 +3,56 @@
   <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>DMM All Stars Pickems</title>
+    <link rel="icon" type="image/png" href="/favicon.png">
+    <title>Dmm All Stars (unofficial) Pickems</title>
   </head>
   <body>
     <main id="app">
-      <h1>DMM All Stars Pickems</h1>
-      <form id="login-form">
-        <label for="email">Email</label>
-        <input
-          type="email"
-          id="email"
-          name="email"
-          placeholder="Enter email"
-          required
-        >
-        <button type="submit" id="login-button">Log in</button>
-      </form>
-      <p id="login-status" role="status"></p>
+      <div class="site-header">
+        <h1>DMM All Stars (unofficial) Pickems</h1>
+        <section id="auth-panel" aria-label="Account">
+          <p id="logged-in-banner"></p>
+          <button type="button" id="show-login-button">Log in</button>
+          <div id="logged-in-panel" hidden>
+            <button type="button" id="logout-button">Log out</button>
+          </div>
+          <p id="login-status" role="status"></p>
+        </section>
+      </div>
+      <div id="login-overlay" hidden>
+        <div id="login-overlay-header">
+          <div></div>
+          <h2>Log in</h2>
+          <button type="button" id="close-login-button" aria-label="Close login form">×</button>
+        </div>
+        <form id="login-form" aria-label="Request login link">
+          <div class="login-form-element">
+            <label for="email">Email</label>
+            <input
+              type="email"
+              id="email"
+              name="email"
+              placeholder="you@example.com"
+              required
+            >
+          </div>
+          <div class="login-form-element">
+            <label for="display-name">Display name</label>
+            <input
+              type="text"
+              id="display-name"
+              name="display_name"
+              placeholder="billybob (optional)"
+              required
+            >
+          </div>
+        </form>
+        <button type="submit" id="login-button" form="login-form">Send link</button>
+      </div>
+      <section id="ranking-panel" aria-label="Team ranking"></section>
+      <section id="questions-panel" aria-label="Pickem questions"></section>
+      <p id="save-status" role="status"></p>
+      <section id="submission-countdown" aria-label="Submission countdown"></section>
     </main>
     <script type="module" src="/src/main.ts"></script>
   </body>

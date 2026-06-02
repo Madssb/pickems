@@ -1,0 +1,70 @@
+{
+  "Kills": {
+    "first_kill": {
+      "question": "Who gets the first kill?",
+      "answerCategory": "player"
+    },
+    "most_kills": {
+      "question": "Who gets the most kills?",
+      "answerCategory": "player"
+    },
+    "fewest_kills": {
+      "question": "Who gets the fewest kills?",
+      "answerCategory": "player"
+    },
+    "most_kills_team": {
+      "question": "which team gets the most kills?",
+      "answerCategory": "team"
+    }
+  },
+  "Deaths": {
+    "first_death": {
+      "question": "Who dies first?",
+      "answerCategory": "player"
+    },
+    "most_deaths": {
+      "question": "Who dies the most?",
+      "answerCategory": "player"
+    },
+    "most_deaths_team": {
+      "question": "which team dies the most?",
+      "answerCategory": "team"
+    },
+    "least_deaths_team": {
+      "question": "which team dies the least?",
+      "answerCategory": "team"
+    }
+  },
+  "Pvm Firsts": {
+    "first_fire_cape": {
+      "question": "Who gets the first fire cape?",
+      "answerCategory": "player"
+    },
+    "first_infernal_cape": {
+      "question": "Who gets the first infernal cape?",
+      "answerCategory": "player"
+    },
+    "first_deep_delve": {
+      "question": "Who gets the first deep delve?",
+      "answerCategory": "player"
+    },
+    "first_voidwaker": {
+      "question": "Which team finishes voidwaker first?",
+      "answerCategory": "team"
+    },
+    "first_vls": {
+      "question": "Who gets the first VLS?",
+      "answerCategory":"player"
+    }
+  },
+  "miscellaneous": {
+    "most_xp": {
+      "question": "Who gets the most xp?",
+      "answerCategory": "player"
+    },
+    "most_quest_points": {
+      "question": "Who gets the most quest points?",
+      "answerCategory": "player"
+    }
+  }
+}
