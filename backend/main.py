@@ -13,6 +13,7 @@ import os
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
+from urllib.parse import urlparse
 
 from db import (
     consume_magic_link,
@@ -46,13 +47,24 @@ if not RESEND_API_KEY:
     raise SystemExit("RESEND_API_KEY is not set")
 resend.api_key = RESEND_API_KEY
 
-BACKEND_BASE_URL = os.getenv("VITE_API_BASE_URL")
-if not BACKEND_BASE_URL:
-    raise SystemExit("VITE_API_BASE_URL is not set")
+def require_http_base_url(env_name: str) -> str:
+    value = os.getenv(env_name)
+    if not value:
+        raise SystemExit(f"{env_name} is not set")
 
-FRONTEND_BASE_URL = os.getenv("FRONTEND_BASE_URL")
-if not FRONTEND_BASE_URL:
-    raise SystemExit("FRONTEND_BASE_URL is not set")
+    parsed = urlparse(value)
+    if parsed.scheme not in {"http", "https"} or not parsed.netloc:
+        raise SystemExit(
+            f"{env_name} must be an absolute http(s) URL, "
+            "for example https://pickems-api.ladlorchart.com"
+        )
+
+    return value.rstrip("/")
+
+
+BACKEND_BASE_URL = require_http_base_url("VITE_API_BASE_URL")
+
+FRONTEND_BASE_URL = require_http_base_url("FRONTEND_BASE_URL")
 
 APP_ENV = os.getenv("APP_ENV", "development")
 DEV_ALLOWED_EMAILS = os.getenv("DEV_ALLOWED_EMAILS", "")

@@ -44,10 +44,47 @@ type SubmissionResponse = {
   updated_at: string;
 };
 
-const apiBaseUrl = import.meta.env.VITE_API_BASE_URL;
-if (!apiBaseUrl) {
-  throw new Error('VITE_API_BASE_URL is not set');
+function getApiBaseUrl(): string {
+  const rawApiBaseUrl = import.meta.env.VITE_API_BASE_URL;
+  if (!rawApiBaseUrl) {
+    throw new Error('VITE_API_BASE_URL is not set');
+  }
+
+  try {
+    const url = new URL(rawApiBaseUrl);
+    if (!['http:', 'https:'].includes(url.protocol)) {
+      throw new Error('unsupported protocol');
+    }
+
+    return url.toString().replace(/\/$/, '');
+  } catch {
+    throw new Error('VITE_API_BASE_URL must be an absolute http(s) URL, for example https://pickems-api.ladlorchart.com');
+  }
 }
+
+async function explainFailedResponse(response: Response): Promise<Error> {
+  const responseText = await response.text();
+  let responseDetail = responseText.trim();
+
+  if (responseDetail) {
+    try {
+      const parsed = JSON.parse(responseDetail) as unknown;
+      if (typeof parsed === 'object' && parsed !== null && 'detail' in parsed) {
+        responseDetail = String(parsed.detail);
+      }
+    } catch {
+      responseDetail = responseDetail.slice(0, 160);
+    }
+  }
+
+  const message = responseDetail
+    ? `Request to ${response.url} failed with status ${response.status}: ${responseDetail}`
+    : `Request to ${response.url} failed with status ${response.status}`;
+
+  return new Error(message);
+}
+
+const apiBaseUrl = getApiBaseUrl();
 
 
 /* hit POST: /auth/request-link when button is clicked */
@@ -96,7 +133,7 @@ function setupLoginForm() {
       });
   
       if (!response.ok) {
-        throw new Error(`Request failed with status ${response.status}`);
+        throw await explainFailedResponse(response);
       }
   
       loginStatus.textContent = 'Login link requested. Check your email.';
@@ -116,7 +153,7 @@ async function checkCurrentUser(): Promise<CurrentUser | null> {
       credentials: 'include',
     });
     if (!response.ok) {
-      throw new Error(`Request failed with status ${response.status}`);
+      throw await explainFailedResponse(response);
     }
     const user: CurrentUser = await response.json();
 
@@ -172,7 +209,7 @@ function setupLogoutButton() {
       });
 
       if (!response.ok) {
-        throw new Error(`Request failed with status ${response.status}`);
+        throw await explainFailedResponse(response);
       }
 
       setupLoggedInBanner(null);
@@ -426,7 +463,7 @@ async function saveSubmission() {
     }
 
     if (!response.ok) {
-      throw new Error(`Request failed with status ${response.status}`);
+      throw await explainFailedResponse(response);
     }
 
     const result: SubmissionResponse = await response.json();
@@ -474,7 +511,7 @@ async function hydrateSubmission(rankingControls: RankingControls) {
     }
 
     if (!response.ok) {
-      throw new Error(`Request failed with status ${response.status}`);
+      throw await explainFailedResponse(response);
     }
 
     const submission: SubmissionPayload = await response.json();
