@@ -46,9 +46,9 @@ if not RESEND_API_KEY:
     raise SystemExit("RESEND_API_KEY is not set")
 resend.api_key = RESEND_API_KEY
 
-BACKEND_PUBLIC_URL = os.getenv("BACKEND_PUBLIC_URL")
-if not BACKEND_PUBLIC_URL:
-    raise SystemExit("BACKEND_PUBLIC_URL is not set")
+BACKEND_BASE_URL = os.getenv("VITE_API_BASE_URL")
+if not BACKEND_BASE_URL:
+    raise SystemExit("VITE_API_BASE_URL is not set")
 
 FRONTEND_BASE_URL = os.getenv("FRONTEND_BASE_URL")
 if not FRONTEND_BASE_URL:
@@ -139,7 +139,7 @@ async def request_link(payload: LoginRequest):
     token, token_hash = generate_token()
 
     await instantiate_magic_token(user_id, token_hash)
-    magic_link = f"{BACKEND_PUBLIC_URL}/auth/verify?token={token}"
+    magic_link = f"{BACKEND_BASE_URL}/auth/verify?token={token}"
     html = f"""
     <p>Hi,</p>
 
