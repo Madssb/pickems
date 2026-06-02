@@ -6,6 +6,11 @@ body{
 #app{
     display: flex;
     flex-direction: column;
+    min-height: calc(100vh - 110px);
+}
+
+a {
+    color: #9fd0ff;
 }
 
 .site-header {
@@ -139,8 +144,80 @@ select{
     row-gap: 4px;
 }
 
+#privacy-notice {
+    position: fixed;
+    right: 18px;
+    bottom: 18px;
+    z-index: 20;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    column-gap: 18px;
+    align-items: center;
+    width: min(640px, calc(100vw - 36px));
+    padding: 14px 16px;
+    background-color: #3a3a3a;
+    border: 1px solid #747474;
+    box-shadow: 0 8px 22px rgba(0, 0, 0, 0.35);
+}
+
+#privacy-notice h2 {
+    margin: 0 0 6px;
+    font-size: 18px;
+}
+
+#privacy-notice p {
+    margin: 0 0 6px;
+    line-height: 1.35;
+}
+
+#privacy-notice-dismiss {
+    min-width: 76px;
+    height: 38px;
+}
+
+.site-footer {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 6px 18px;
+    margin-top: 28px;
+    padding: 16px 12px;
+    color: #c8c8c8;
+    border-top: 1px solid #555;
+    font-size: 14px;
+    text-align: center;
+}
+
+.site-footer p {
+    margin: 0;
+}
+
 @media (max-width: 700px) {
     .question-grid{
         grid-template-columns: 1fr;
+    }
+
+    .site-header {
+        grid-template-columns: 1fr;
+        row-gap: 10px;
+    }
+
+    .site-header > h1,
+    #auth-panel {
+        grid-column: 1;
+        justify-self: center;
+    }
+
+    #privacy-notice {
+        grid-template-columns: 1fr;
+        row-gap: 12px;
+        right: 12px;
+        bottom: 12px;
+        width: calc(100vw - 24px);
+        box-sizing: border-box;
+    }
+
+    #privacy-notice-dismiss {
+        justify-self: end;
     }
 }

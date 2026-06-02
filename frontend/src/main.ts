@@ -84,6 +84,27 @@ async function explainFailedResponse(response: Response): Promise<Error> {
 }
 
 const apiBaseUrl = getApiBaseUrl();
+const privacyNoticeStorageKey = 'pickems-privacy-notice-dismissed';
+
+function setupPrivacyNotice() {
+  const privacyNotice = document.querySelector<HTMLDivElement>('#privacy-notice');
+  const dismissButton = document.querySelector<HTMLButtonElement>('#privacy-notice-dismiss');
+
+  if (!privacyNotice || !dismissButton) {
+    throw new Error('Privacy notice markup is missing required elements');
+  }
+
+  if (localStorage.getItem(privacyNoticeStorageKey) === 'true') {
+    privacyNotice.hidden = true;
+    return;
+  }
+
+  privacyNotice.hidden = false;
+  dismissButton.addEventListener('click', () => {
+    localStorage.setItem(privacyNoticeStorageKey, 'true');
+    privacyNotice.hidden = true;
+  });
+}
 
 
 /* hit POST: /auth/request-link when button is clicked */
@@ -536,6 +557,7 @@ async function hydrateSubmission(rankingControls: RankingControls) {
 
 
 
+setupPrivacyNotice();
 setupLoginForm();
 setupLogoutButton();
 SetupSubmissionCountdown();

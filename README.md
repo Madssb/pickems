@@ -1,4 +1,9 @@
-# Pickems
+# Dmm Allstars pickems webapp
+
+Sign up with magic link sent by email, make predictions before events start, then submissions lock. view stats and leaderboards when stats become available.
+Note that e-mails provided during login are hashed and not directly viewable by repo-owner (see request_link in main.py for how email is consumed and stored).
+
+display names will be manually approved for appearing on leaderboards to prevent abuse
 
 ## Quickstart
 
@@ -29,35 +34,4 @@ Run the FastAPI backend with `uv`:
 cd backend
 uv sync
 uv run uvicorn main:app --reload --host 127.0.0.1 --port 8000
-```
-
-The API will be available at:
-
-```text
-http://127.0.0.1:8000
-```
-
-Useful local endpoints:
-
-```bash
-curl http://127.0.0.1:8000/health
-
-curl -X POST http://127.0.0.1:8000/users/123/forms \
-  -H "Content-Type: application/json" \
-  -d '{"form":{"example":"value"}}'
-```
-
-FastAPI docs are available at:
-
-```text
-http://127.0.0.1:8000/docs
-```
-
-## Email Privacy Migration
-
-Existing databases that still have `users.email` can be migrated to
-`users.email_hash` with:
-
-```bash
-psql "$DATABASE_URL" -v email_hash_secret="$EMAIL_HASH_SECRET" -f backend/migrations/001_store_email_hashes_only.sql
 ```

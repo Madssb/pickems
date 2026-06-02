@@ -54,6 +54,26 @@
       <p id="save-status" role="status"></p>
       <section id="submission-countdown" aria-label="Submission countdown"></section>
     </main>
+    <div id="privacy-notice" role="dialog" aria-labelledby="privacy-notice-title" aria-describedby="privacy-notice-text" hidden>
+      <div>
+        <h2 id="privacy-notice-title">Cookie and privacy notice</h2>
+        <p id="privacy-notice-text">
+          This site uses a single essential session cookie to keep you logged in after magic-link sign-in.
+          Login email addresses are normalized and hashed before storage; submitted picks and display names are stored for the pickems.
+        </p>
+        <a href="https://github.com/Madssb/pickems" target="_blank" rel="noopener noreferrer">View public source</a>
+      </div>
+      <button type="button" id="privacy-notice-dismiss">Got it</button>
+    </div>
+    <footer class="site-footer">
+      <p>
+        Cookie notice: this site uses an essential session cookie for login. Email addresses are hashed before storage.
+      </p>
+      <p>
+        Public source:
+        <a href="https://github.com/Madssb/pickems" target="_blank" rel="noopener noreferrer">github.com/Madssb/pickems</a>
+      </p>
+    </footer>
     <script type="module" src="/src/main.ts"></script>
   </body>
 </html>
