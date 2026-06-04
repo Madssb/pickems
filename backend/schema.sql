@@ -1,24 +1,23 @@
 CREATE TABLE users (
     id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    email_hash TEXT UNIQUE NOT NULL,
-    display_name TEXT NOT NULL,
+    display_name TEXT NOT NULL DEFAULT 'Guest',
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
-CREATE TABLE magic_tokens (
-    id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    token_hash TEXT NOT NULL UNIQUE,
-    expires_at TIMESTAMPTZ NOT NULL,
-    used_at TIMESTAMPTZ,
-    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-);
+
 CREATE TABLE sessions (
-    id TEXT PRIMARY KEY,
+    token_hash TEXT PRIMARY KEY,
     user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    expires_at TIMESTAMPTZ NOT NULL,
+    expires_at TIMESTAMPTZ NOT NULL DEFAULT (NOW() + INTERVAL '90 days'),
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
-CREATE TABLE submissions (
+
+CREATE TABLE login_tokens (
+    token_hash TEXT PRIMARY KEY,
+    user_id BIGINT UNIQUE NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE predictions (
     user_id BIGINT PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
     team_rankings JSONB NOT NULL DEFAULT '[]',
     first_kill TEXT,
@@ -38,5 +37,3 @@ CREATE TABLE submissions (
     most_quest_points TEXT,
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
-CREATE INDEX idx_magic_tokens_expires_at
-ON magic_tokens(expires_at);

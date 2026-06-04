@@ -4,73 +4,57 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="icon" type="image/png" href="/favicon.png">
-    <title>Dmm All Stars (unofficial) Pickems</title>
+    <title>DMM All Stars (unofficial) Pickems</title>
   </head>
   <body>
     <main id="app">
-      <div class="site-header">
+      <header class="site-header">
         <h1>DMM All Stars (unofficial) Pickems</h1>
-        <section id="auth-panel" aria-label="Account">
-          <p id="logged-in-banner"></p>
-          <button type="button" id="show-login-button">Log in</button>
-          <div id="logged-in-panel" hidden>
-            <button type="button" id="logout-button">Log out</button>
-          </div>
-          <p id="login-status" role="status"></p>
-        </section>
-      </div>
-      <div id="login-overlay" hidden>
-        <div id="login-overlay-header">
-          <div></div>
-          <h2>Log in</h2>
-          <button type="button" id="close-login-button" aria-label="Close login form">×</button>
-        </div>
-        <form id="login-form" aria-label="Request login link">
-          <div class="login-form-element">
-            <label for="email">Email</label>
-            <input
-              type="email"
-              id="email"
-              name="email"
-              placeholder="you@example.com"
-              required
-            >
-          </div>
-          <div class="login-form-element">
-            <label for="display-name">Display name</label>
-            <input
-              type="text"
-              id="display-name"
-              name="display_name"
-              placeholder="billybob (optional)"
-              required
-            >
-          </div>
-        </form>
-        <button type="submit" id="login-button" form="login-form">Send link</button>
-      </div>
+        <p id="session-banner"></p>
+      </header>
+      <p>Make your predictions, view pick performance, score points, and top the leaderboard</p>
+      <section id="login-link-panel" aria-label="Login link" hidden>
+        <button type="button" id="close-login-link-button" aria-label="Close login-link panel">×</button>
+        <h2>Manage login link</h2>
+        <p>Creating a new login link invalidates the previous one. Anyone with the current link can access your picks.</p>
+        <button type="button" id="copy-login-link-button">Create and copy login link</button>
+      </section>
       <section id="ranking-panel" aria-label="Team ranking"></section>
       <section id="questions-panel" aria-label="Pickem questions"></section>
       <p id="save-status" role="status"></p>
-      <section id="submission-countdown" aria-label="Submission countdown"></section>
+      <section id="prediction-countdown" aria-label="Prediction deadline"></section>
+      <section id="participant-settings" aria-label="Participant settings">
+        <h2>Settings</h2>
+        <form id="display-name-form" aria-label="Update display name">
+          <label for="display-name">Display name</label>
+          <input
+            type="text"
+            id="display-name"
+            name="display_name"
+            placeholder="Display name"
+            required
+          >
+          <button type="submit" id="save-display-name-button">Save name</button>
+        </form>
+        <button type="button" id="show-login-link-button">Generate login link</button>
+        <p id="login-link-status" role="status"></p>
+      </section>
     </main>
-    <div id="privacy-notice" role="dialog" aria-labelledby="privacy-notice-title" aria-describedby="privacy-notice-text" hidden>
-      <div>
-        <h2 id="privacy-notice-title">Cookie and privacy notice</h2>
-        <p id="privacy-notice-text">
-          This site uses a single essential session cookie to keep you logged in after magic-link sign-in.
-          Login email addresses are normalized and hashed before storage; submitted picks and display names are stored for the pickems.
-        </p>
-        <a href="https://github.com/Madssb/pickems" target="_blank" rel="noopener noreferrer">View public source</a>
-      </div>
+    <aside id="privacy-notice" aria-labelledby="privacy-notice-title" aria-describedby="privacy-notice-text" hidden>
+      <h2 id="privacy-notice-title">Cookie and privacy notice</h2>
+      <p id="privacy-notice-text">
+        This site uses one essential cookie to associate this browser with your saved picks.
+        No email address or account is required.
+      </p>
+      <a href="https://github.com/Madssb/pickems" target="_blank" rel="noopener noreferrer">View public source</a>
       <button type="button" id="privacy-notice-dismiss">Got it</button>
-    </div>
+    </aside>
     <footer class="site-footer">
       <p>
-        Cookie notice: this site uses an essential session cookie for login. Email addresses are hashed before storage.
+        Your picks are associated with an anonymous browser session. A reusable login link is optional.
       </p>
       <p>
-        Public source:
+        Sourcecode:
         <a href="https://github.com/Madssb/pickems" target="_blank" rel="noopener noreferrer">github.com/Madssb/pickems</a>
       </p>
     </footer>

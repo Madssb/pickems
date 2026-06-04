@@ -1,9 +1,28 @@
-# Dmm Allstars pickems webapp
+# DMM All Stars Pickems
 
-Sign up with magic link sent by email, make predictions before events start, then submissions lock. view stats and leaderboards when stats become available.
-Note that e-mails provided during login are hashed and not directly viewable by repo-owner (see request_link in main.py for how email is consumed and stored).
+Visitors receive an anonymous browser session automatically and can immediately
+make predictions. Picks autosave until the prediction deadline.
 
-display names will be manually approved for appearing on leaderboards to prevent abuse
+Participants can create a login link that connects other browsers to the same
+picks. No email address or account is required.
+
+The current login link is a reusable bearer credential: anyone with it can
+access the associated picks. Creating another login link rotates it and
+immediately invalidates the previous link. Existing browser sessions remain
+active.
+
+The active API is organized around sessions, login links, and predictions:
+
+```text
+GET /session
+POST /session
+DELETE /session
+POST /display-name
+POST /login-links
+GET /login
+GET /predictions
+PUT /predictions
+```
 
 ## Quickstart
 
@@ -25,7 +44,6 @@ The frontend reads its backend URL from `VITE_API_BASE_URL` in the repo-root `.e
 
 ```env
 VITE_API_BASE_URL=http://127.0.0.1:8000
-EMAIL_HASH_SECRET=replace-with-a-long-random-secret
 ```
 
 Run the FastAPI backend with `uv`:

@@ -21,24 +21,23 @@ type Questions = Record<string, QuestionGroup>;
 const teams = teams_ as Teams;
 const questions = questions_ as Questions;
 const teamNames = Object.keys(teams);
-const submissionDeadline = new Date('2026-06-06T13:00:00Z');
+const predictionDeadline = new Date('2026-06-06T13:00:00Z');
 
-type LoginRequest = {
-  email: string;
-  display_name: string;
+type LoginLinkResponse = {
+  login_url: string;
 };
 
-type CurrentUser = {
+type Participant = {
   id: number,
   display_name: string
 }
 
-type SubmissionPayload = {
+type PredictionsPayload = {
   team_rankings: string[];
   [key: string]: string[] | string | null;
 };
 
-type SubmissionResponse = {
+type PredictionsResponse = {
   message: string;
   updated_at: string;
 };
@@ -87,7 +86,7 @@ const apiBaseUrl = getApiBaseUrl();
 const privacyNoticeStorageKey = 'pickems-privacy-notice-dismissed';
 
 function setupPrivacyNotice() {
-  const privacyNotice = document.querySelector<HTMLDivElement>('#privacy-notice');
+  const privacyNotice = document.querySelector<HTMLElement>('#privacy-notice');
   const dismissButton = document.querySelector<HTMLButtonElement>('#privacy-notice-dismiss');
 
   if (!privacyNotice || !dismissButton) {
@@ -107,137 +106,139 @@ function setupPrivacyNotice() {
 }
 
 
-/* hit POST: /auth/request-link when button is clicked */
-function setupLoginForm() {
-  const showLoginButton = document.querySelector<HTMLButtonElement>('#show-login-button');
-  const closeLoginButton = document.querySelector<HTMLButtonElement>('#close-login-button');
-  const loginOverlay = document.querySelector<HTMLDivElement>('#login-overlay');
-  const loginForm = document.querySelector<HTMLFormElement>('#login-form');
-  const emailInput = document.querySelector<HTMLInputElement>('#email');
-  const displayNameInput = document.querySelector<HTMLInputElement>('#display-name');
-  const loginButton = document.querySelector<HTMLButtonElement>('#login-button');
-  const loginStatus = document.querySelector<HTMLParagraphElement>('#login-status');
+function setupLoginLinkPanel() {
+  const showLoginLinkButton = document.querySelector<HTMLButtonElement>('#show-login-link-button');
+  const closeLoginLinkButton = document.querySelector<HTMLButtonElement>('#close-login-link-button');
+  const loginLinkPanel = document.querySelector<HTMLElement>('#login-link-panel');
+  const copyLoginLinkButton = document.querySelector<HTMLButtonElement>('#copy-login-link-button');
+  const loginLinkStatus = document.querySelector<HTMLParagraphElement>('#login-link-status');
   
-  if (!showLoginButton || !closeLoginButton || !loginOverlay || !loginForm || !emailInput || !displayNameInput || !loginButton || !loginStatus) {
-    throw new Error('Login form markup is missing required elements');
+  if (!showLoginLinkButton || !closeLoginLinkButton || !loginLinkPanel || !copyLoginLinkButton || !loginLinkStatus) {
+    throw new Error('Login-link panel markup is missing required elements');
   }
 
-  showLoginButton.addEventListener('click', () => {
-    loginOverlay.hidden = false;
-    displayNameInput.focus();
-  });
-
-  closeLoginButton.addEventListener('click', () => {
-    loginOverlay.hidden = true;
-    loginStatus.textContent = '';
-  });
-  
-  loginForm.addEventListener('submit', async (event) => {
-    event.preventDefault();
-  
-    const payload: LoginRequest = {
-      email: emailInput.value,
-      display_name: displayNameInput.value,
-    };
-  
-    loginButton.disabled = true;
-    loginStatus.textContent = 'Requesting login link...';
-  
-    try {
-      const response = await fetch(`${apiBaseUrl}/auth/request-link`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(payload),
-      });
-  
-      if (!response.ok) {
-        throw await explainFailedResponse(response);
-      }
-  
-      loginStatus.textContent = 'Login link requested. Check your email.';
-    } catch (error) {
-      console.error(error);
-      loginStatus.textContent = 'Could not request a login link.';
-    } finally {
-      loginButton.disabled = false;
-    }
-  });
-}
-
-/* hit GET: /auth/me on page load */
-async function checkCurrentUser(): Promise<CurrentUser | null> {
-  try {
-    const response = await fetch(`${apiBaseUrl}/auth/me`, {
+  async function createOrRotateLoginLink(): Promise<LoginLinkResponse> {
+    const response = await fetch(`${apiBaseUrl}/login-links`, {
+      method: 'POST',
       credentials: 'include',
     });
+
     if (!response.ok) {
       throw await explainFailedResponse(response);
     }
-    const user: CurrentUser = await response.json();
+    return await response.json() as LoginLinkResponse;
+  }
 
-    console.log(user.id);
-    console.log(user.display_name);
-    return user;
+  showLoginLinkButton.addEventListener('click', () => {
+    loginLinkPanel.hidden = false;
+  });
+
+  closeLoginLinkButton.addEventListener('click', () => {
+    loginLinkPanel.hidden = true;
+    loginLinkStatus.textContent = '';
+  });
+
+  copyLoginLinkButton.addEventListener('click', async () => {
+    copyLoginLinkButton.disabled = true;
+    loginLinkStatus.textContent = 'Creating new login link...';
+
+    try {
+      const result = await createOrRotateLoginLink();
+      await navigator.clipboard.writeText(result.login_url);
+      loginLinkStatus.textContent = 'New login link copied. The previous link is now invalid.';
+    } catch (error) {
+      console.error(error);
+      loginLinkStatus.textContent = 'Could not copy a login link.';
+    } finally {
+      copyLoginLinkButton.disabled = false;
+    }
+  });
+
+}
+
+/* Return the existing browser session, or create a guest session. */
+async function getOrCreateParticipant(): Promise<Participant | null> {
+  try {
+    let response = await fetch(`${apiBaseUrl}/session`, {
+      credentials: 'include',
+    });
+
+    if (response.status === 401) {
+      response = await fetch(`${apiBaseUrl}/session`, {
+        method: 'POST',
+        credentials: 'include',
+      });
+    }
+
+    if (!response.ok) {
+      throw await explainFailedResponse(response);
+    }
+    return await response.json() as Participant;
   } catch (error) {
     console.log(error);
     return null;
   }
 }
 
-function setupLoggedInBanner(user: CurrentUser | null) {
-  const showLoginButton = document.querySelector<HTMLButtonElement>('#show-login-button');
-  const loginOverlay = document.querySelector<HTMLDivElement>('#login-overlay');
-  const loggedInPanel = document.querySelector<HTMLDivElement>('#logged-in-panel');
-  const banner = document.querySelector<HTMLDivElement>('#logged-in-banner');
+function setupSessionPanel(participant: Participant | null) {
+  const showLoginLinkButton = document.querySelector<HTMLButtonElement>('#show-login-link-button');
+  const loginLinkPanel = document.querySelector<HTMLElement>('#login-link-panel');
+  const banner = document.querySelector<HTMLParagraphElement>('#session-banner');
+  const displayNameInput = document.querySelector<HTMLInputElement>('#display-name');
 
-  if (!showLoginButton || !loginOverlay || !loggedInPanel || !banner) {
-    throw new Error('Auth panel markup is missing required elements');
+  if (!showLoginLinkButton || !loginLinkPanel || !banner || !displayNameInput) {
+    throw new Error('Session panel markup is missing required elements');
   }
 
-  if (user) {
-    showLoginButton.hidden = true;
-    loginOverlay.hidden = true;
-    loggedInPanel.hidden = false;
-    banner.textContent = `Logged in as ${user.display_name}`;
+  if (participant) {
+    showLoginLinkButton.hidden = false;
+    loginLinkPanel.hidden = true;
+    banner.textContent = `Picks saved as ${participant.display_name}`;
+    displayNameInput.value = participant.display_name;
   } else {
-    showLoginButton.hidden = false;
-    loginOverlay.hidden = true;
-    loggedInPanel.hidden = true;
+    showLoginLinkButton.hidden = false;
+    loginLinkPanel.hidden = true;
     banner.textContent = '';
   }
 }
 
-function setupLogoutButton() {
-  const logoutButton = document.querySelector<HTMLButtonElement>('#logout-button');
-  const loginStatus = document.querySelector<HTMLParagraphElement>('#login-status');
+function setupDisplayNameForm() {
+  const displayNameForm = document.querySelector<HTMLFormElement>('#display-name-form');
+  const displayNameInput = document.querySelector<HTMLInputElement>('#display-name');
+  const saveDisplayNameButton = document.querySelector<HTMLButtonElement>('#save-display-name-button');
+  const loginLinkStatus = document.querySelector<HTMLParagraphElement>('#login-link-status');
 
-  if (!logoutButton || !loginStatus) {
-    throw new Error('Logout markup is missing required elements');
+  if (!displayNameForm || !displayNameInput || !saveDisplayNameButton || !loginLinkStatus) {
+    throw new Error('Display-name form markup is missing required elements');
   }
 
-  logoutButton.addEventListener('click', async () => {
-    logoutButton.disabled = true;
-    loginStatus.textContent = 'Logging out...';
+  displayNameForm.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    saveDisplayNameButton.disabled = true;
+    loginLinkStatus.textContent = 'Saving display name...';
 
     try {
-      const response = await fetch(`${apiBaseUrl}/auth/logout`, {
+      const response = await fetch(`${apiBaseUrl}/display-name`, {
         method: 'POST',
         credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ display_name: displayNameInput.value }),
       });
 
       if (!response.ok) {
         throw await explainFailedResponse(response);
       }
 
-      setupLoggedInBanner(null);
-      loginStatus.textContent = '';
+      const participant = await response.json() as Participant;
+      setupSessionPanel(participant);
+      loginLinkStatus.textContent = 'Display name saved.';
     } catch (error) {
       console.error(error);
-      loginStatus.textContent = 'Could not log out.';
+      loginLinkStatus.textContent = 'Could not save display name.';
     } finally {
-      logoutButton.disabled = false;
+      saveDisplayNameButton.disabled = false;
     }
   });
 }
@@ -262,7 +263,7 @@ function renderQuestion(
 
   const select = document.createElement('select');
   select.name = questionKey;
-  select.dataset.submissionField = questionKey;
+  select.dataset.predictionField = questionKey;
 
   const placeholder = document.createElement('option');
   placeholder.value = '';
@@ -410,38 +411,38 @@ function formatCountdown(milliseconds: number): string {
   return `${days}d ${hours}h ${minutes}m ${seconds}s`;
 }
 
-function SetupSubmissionCountdown() {
-  const countdown = document.querySelector<HTMLElement>('#submission-countdown');
+function setupPredictionCountdown() {
+  const countdown = document.querySelector<HTMLElement>('#prediction-countdown');
 
   if (!countdown) {
-    throw new Error('Submission countdown is missing');
+    throw new Error('Prediction countdown is missing');
   }
   const countdownElement = countdown;
 
   function renderCountdown() {
-    const millisecondsRemaining = submissionDeadline.getTime() - Date.now();
+    const millisecondsRemaining = predictionDeadline.getTime() - Date.now();
 
     if (millisecondsRemaining <= 0) {
-      countdownElement.textContent = 'Submissions are closed.';
+      countdownElement.textContent = 'Predictions are closed.';
       return;
     }
 
-    countdownElement.textContent = `Submissions close in ${formatCountdown(millisecondsRemaining)}`;
+    countdownElement.textContent = `Predictions close in ${formatCountdown(millisecondsRemaining)}`;
   }
 
   renderCountdown();
   window.setInterval(renderCountdown, 1000);
 }
 
-function collectSubmission(): SubmissionPayload {
+function collectPredictions(): PredictionsPayload {
   const rankingSelects = document.querySelectorAll<HTMLSelectElement>('.ranking-select');
-  const questionSelects = document.querySelectorAll<HTMLSelectElement>('[data-submission-field]');
-  const payload: SubmissionPayload = {
+  const questionSelects = document.querySelectorAll<HTMLSelectElement>('[data-prediction-field]');
+  const payload: PredictionsPayload = {
     team_rankings: Array.from(rankingSelects).map((select) => select.value),
   };
 
   questionSelects.forEach((select) => {
-    const fieldName = select.dataset.submissionField;
+    const fieldName = select.dataset.predictionField;
 
     if (!fieldName) {
       return;
@@ -463,21 +464,21 @@ function setSaveStatus(message: string) {
   saveStatus.textContent = message;
 }
 
-async function saveSubmission() {
+async function savePredictions() {
   setSaveStatus('Saving...');
 
   try {
-    const response = await fetch(`${apiBaseUrl}/submit-predictions`, {
-      method: 'POST',
+    const response = await fetch(`${apiBaseUrl}/predictions`, {
+      method: 'PUT',
       credentials: 'include',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify(collectSubmission()),
+      body: JSON.stringify(collectPredictions()),
     });
 
     if (response.status === 401) {
-      setSaveStatus('Log in to save predictions.');
+      setSaveStatus('Could not find this browser session.');
       return;
     }
 
@@ -485,7 +486,7 @@ async function saveSubmission() {
       throw await explainFailedResponse(response);
     }
 
-    const result: SubmissionResponse = await response.json();
+    const result: PredictionsResponse = await response.json();
     const savedAt = new Date(result.updated_at);
     setSaveStatus(`Saved ${savedAt.toLocaleTimeString()}`);
   } catch (error) {
@@ -494,12 +495,12 @@ async function saveSubmission() {
   }
 }
 
-function setupSubmissionAutosave() {
+function setupPredictionAutosave() {
   const rankingPanel = document.querySelector<HTMLElement>('#ranking-panel');
   const questionsPanel = document.querySelector<HTMLElement>('#questions-panel');
 
   if (!rankingPanel || !questionsPanel) {
-    throw new Error('Submission controls are missing');
+    throw new Error('Prediction controls are missing');
   }
 
   let saveTimeout: number | undefined;
@@ -511,21 +512,21 @@ function setupSubmissionAutosave() {
       window.clearTimeout(saveTimeout);
     }
 
-    saveTimeout = window.setTimeout(saveSubmission, 400);
+    saveTimeout = window.setTimeout(savePredictions, 400);
   }
 
   rankingPanel.addEventListener('change', scheduleSave);
   questionsPanel.addEventListener('change', scheduleSave);
 }
 
-async function hydrateSubmission(rankingControls: RankingControls) {
+async function hydratePredictions(rankingControls: RankingControls) {
   try {
-    const response = await fetch(`${apiBaseUrl}/get-predictions`, {
+    const response = await fetch(`${apiBaseUrl}/predictions`, {
       credentials: 'include',
     });
 
     if (response.status === 401) {
-      setSaveStatus('Log in to save predictions.');
+      setSaveStatus('Could not find this browser session.');
       return;
     }
 
@@ -533,13 +534,13 @@ async function hydrateSubmission(rankingControls: RankingControls) {
       throw await explainFailedResponse(response);
     }
 
-    const submission: SubmissionPayload = await response.json();
-    rankingControls.hydrate(submission.team_rankings ?? []);
+    const predictions: PredictionsPayload = await response.json();
+    rankingControls.hydrate(predictions.team_rankings ?? []);
 
-    const questionSelects = document.querySelectorAll<HTMLSelectElement>('[data-submission-field]');
+    const questionSelects = document.querySelectorAll<HTMLSelectElement>('[data-prediction-field]');
     questionSelects.forEach((select) => {
-      const fieldName = select.dataset.submissionField;
-      const value = fieldName ? submission[fieldName] : null;
+      const fieldName = select.dataset.predictionField;
+      const value = fieldName ? predictions[fieldName] : null;
 
       if (typeof value === 'string') {
         select.value = value;
@@ -558,14 +559,14 @@ async function hydrateSubmission(rankingControls: RankingControls) {
 
 
 setupPrivacyNotice();
-setupLoginForm();
-setupLogoutButton();
-SetupSubmissionCountdown();
+setupLoginLinkPanel();
+setupDisplayNameForm();
+setupPredictionCountdown();
 const rankingControls = SetupRankings();
 SetupQuestions();
-setupSubmissionAutosave();
-const user = await checkCurrentUser();
-setupLoggedInBanner(user);
-if (user) {
-  await hydrateSubmission(rankingControls);
+setupPredictionAutosave();
+const participant = await getOrCreateParticipant();
+setupSessionPanel(participant);
+if (participant) {
+  await hydratePredictions(rankingControls);
 }

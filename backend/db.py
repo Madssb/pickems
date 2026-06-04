@@ -1,5 +1,4 @@
-"""PostgreSQL queries for the Dmm All Stars Pickems & Crystal Ball project backend.
-"""
+"""PostgreSQL operations for DMM All Stars Pickems."""
 import os
 import json
 from datetime import datetime
@@ -10,7 +9,7 @@ import asyncpg
 from dotenv import load_dotenv
 
 
-SUBMISSION_FIELDS = [
+PREDICTION_FIELDS = [
     "team_rankings",
     "first_kill",
     "first_death",
@@ -38,12 +37,12 @@ if not DATABASE_URL:
 _pool: asyncpg.Pool | None = None
 
 
-class SessionUser(TypedDict):
+class SessionParticipant(TypedDict):
     id: int
     display_name: str
 
 
-class Submission(TypedDict):
+class Predictions(TypedDict):
     team_rankings: NotRequired[list[str]]
     first_kill: NotRequired[str | None]
     first_death: NotRequired[str | None]
@@ -63,111 +62,17 @@ class Submission(TypedDict):
 
 
 async def get_pool() -> asyncpg.Pool:
-    """Shared pool by all postgre ops for backend
-    """
+    """Return the shared PostgreSQL connection pool."""
     global _pool
     if _pool is None:
         _pool = await asyncpg.create_pool(DATABASE_URL)
     return _pool
 
 
-async def instantiate_magic_token(user_id: int, token_hash: str) -> None:
-    """instantiate magic token record, binding user id to a single-use token.
-    """
-    pool = await get_pool()
-    await pool.execute(
-        """
-        INSERT INTO magic_tokens (
-            user_id,
-            token_hash,
-            expires_at
-        )
-        VALUES (
-            $1,
-            $2,
-            NOW() + INTERVAL '24 hours'
-        );
-        """,
-        user_id,
-        token_hash,
-    )
-
-
-async def get_or_create_user_id_by_email_hash(
-    email_hash: str,
-    display_name: str,
-) -> int:
-    """Return the user id for an email hash, creating the user when missing."""
-    pool = await get_pool()
-    return await pool.fetchval(
-        """
-        INSERT INTO users (
-            email_hash,
-            display_name
-        )
-        VALUES (
-            $1,
-            $2
-        )
-        ON CONFLICT (email_hash) DO UPDATE
-        SET display_name = EXCLUDED.display_name
-        RETURNING id;
-        """,
-        email_hash,
-        display_name,
-    )
-
-async def consume_magic_link(token_hash: str) -> int | None:
-    """Consume a valid magic link and return its user id."""
-    pool = await get_pool()
-    return await pool.fetchval(
-        """
-        UPDATE magic_tokens
-        SET used_at = NOW()
-        WHERE token_hash = $1
-          AND used_at IS NULL
-          AND expires_at > NOW()
-        RETURNING user_id;
-        """,
-        token_hash,
-    )
-
-
-async def create_session(session_id: str, user_id: int) -> None:
-    """Create a browser session for a logged-in user."""
-    pool = await get_pool()
-    await pool.execute(
-        """
-        INSERT INTO sessions (
-            id,
-            user_id,
-            expires_at
-        )
-        VALUES (
-            $1,
-            $2,
-            NOW() + INTERVAL '30 days'
-        );
-        """,
-        session_id,
-        user_id,
-    )
-
-
-async def delete_session(session_id: str) -> None:
-    """Delete a browser session."""
-    pool = await get_pool()
-    await pool.execute(
-        """
-        DELETE FROM sessions
-        WHERE id = $1;
-        """,
-        session_id,
-    )
-
-
-async def get_user_by_session(session_id: str) -> SessionUser | None:
-    """Return safe user display fields for a valid, unexpired session."""
+async def get_participant_by_session_hash(
+    token_hash: str,
+) -> SessionParticipant | None:
+    """Return the participant belonging to a valid browser session."""
     pool = await get_pool()
     row = await pool.fetchrow(
         """
@@ -176,10 +81,10 @@ async def get_user_by_session(session_id: str) -> SessionUser | None:
             users.display_name
         FROM sessions
         JOIN users ON users.id = sessions.user_id
-        WHERE sessions.id = $1
+        WHERE sessions.token_hash = $1
           AND sessions.expires_at > NOW();
         """,
-        session_id,
+        token_hash,
     )
     if row is None:
         return None
@@ -189,18 +94,138 @@ async def get_user_by_session(session_id: str) -> SessionUser | None:
     }
 
 
-async def upsert_submission(user_id: int, submission: Submission) -> datetime:
-    """Insert or update user submitted predictions"""
+async def update_display_name(
+    participant_id: int,
+    display_name: str,
+) -> SessionParticipant:
+    """Update and return a participant's display name."""
+    pool = await get_pool()
+    row = await pool.fetchrow(
+        """
+        UPDATE users
+        SET display_name = $2
+        WHERE id = $1
+        RETURNING id, display_name;
+        """,
+        participant_id,
+        display_name,
+    )
+    return {
+        "id": row["id"],
+        "display_name": row["display_name"],
+    }
+
+
+async def create_participant_with_session(
+    token_hash: str,
+) -> SessionParticipant:
+    """Create an anonymous participant and bind a browser session to it."""
+    pool = await get_pool()
+    async with pool.acquire() as connection:
+        async with connection.transaction():
+            participant = await connection.fetchrow(
+                """
+                INSERT INTO users DEFAULT VALUES
+                RETURNING id, display_name;
+                """
+            )
+            await connection.execute(
+                """
+                INSERT INTO sessions (token_hash, user_id)
+                VALUES ($1, $2);
+                """,
+                token_hash,
+                participant["id"],
+            )
+
+    return {
+        "id": participant["id"],
+        "display_name": participant["display_name"],
+    }
+
+
+async def upsert_login_token(participant_id: int, token_hash: str) -> None:
+    """Create or rotate a participant's reusable login token."""
+    pool = await get_pool()
+    await pool.execute(
+        """
+        INSERT INTO login_tokens (
+            user_id,
+            token_hash
+        )
+        VALUES (
+            $1,
+            $2
+        )
+        ON CONFLICT (user_id) DO UPDATE
+        SET
+            token_hash = EXCLUDED.token_hash,
+            created_at = NOW();
+        """,
+        participant_id,
+        token_hash,
+    )
+
+
+async def get_participant_id_by_login_token_hash(token_hash: str) -> int | None:
+    """Return the participant ID belonging to a reusable login token."""
+    pool = await get_pool()
+    return await pool.fetchval(
+        """
+        SELECT user_id
+        FROM login_tokens
+        WHERE token_hash = $1;
+        """,
+        token_hash,
+    )
+
+
+async def create_session(token_hash: str, participant_id: int) -> None:
+    """Create a browser session for a participant."""
+    pool = await get_pool()
+    await pool.execute(
+        """
+        INSERT INTO sessions (
+            token_hash,
+            user_id
+        )
+        VALUES (
+            $1,
+            $2
+        );
+        """,
+        token_hash,
+        participant_id,
+    )
+
+
+async def delete_session(token_hash: str) -> None:
+    """Delete a browser session."""
+    pool = await get_pool()
+    await pool.execute(
+        """
+        DELETE FROM sessions
+        WHERE token_hash = $1;
+        """,
+        token_hash,
+    )
+
+
+async def upsert_predictions(
+    participant_id: int,
+    predictions: Predictions,
+) -> datetime:
+    """Insert or replace a participant's predictions."""
     pool = await get_pool()
 
-    columns = ["user_id", *SUBMISSION_FIELDS]
+    columns = ["user_id", *PREDICTION_FIELDS]
     values = [
-        user_id,
+        participant_id,
         *[
-            json.dumps(submission.get(field, []))
+            json.dumps(predictions.get(field, []))
             if field == "team_rankings"
-            else submission.get(field)
-            for field in SUBMISSION_FIELDS
+            else predictions.get(field)
+            for field in PREDICTION_FIELDS
         ],
     ]
 
@@ -208,12 +233,12 @@ async def upsert_submission(user_id: int, submission: Submission) -> datetime:
     column_sql = ", ".join(columns)
     update_sql = ", ".join(
         f"{field} = EXCLUDED.{field}"
-        for field in SUBMISSION_FIELDS
+        for field in PREDICTION_FIELDS
     )
 
     return await pool.fetchval(
         f"""
-        INSERT INTO submissions (
+        INSERT INTO predictions (
             {column_sql}
         )
         VALUES (
@@ -229,30 +254,17 @@ async def upsert_submission(user_id: int, submission: Submission) -> datetime:
     )
 
 
-async def get_user_id_by_session_id(session_id: str) -> int | None:
-    """Return the user id for a valid, unexpired session."""
-    pool = await get_pool()
-    return await pool.fetchval(
-        """
-        SELECT user_id
-        FROM sessions
-        WHERE id = $1
-          AND expires_at > NOW();
-        """,
-        session_id,
-    )
-
-async def get_user_predictions(user_id: int) -> Submission | None:
-    """Return saved predictions for a user, if present."""
+async def get_predictions(participant_id: int) -> Predictions | None:
+    """Return a participant's saved predictions, if present."""
     pool = await get_pool()
     row = await pool.fetchrow(
         f"""
         SELECT
-            {", ".join(SUBMISSION_FIELDS)}
-        FROM submissions
+            {", ".join(PREDICTION_FIELDS)}
+        FROM predictions
         WHERE user_id = $1;
         """,
-        user_id,
+        participant_id,
     )
     if row is None:
         return None

@@ -23,22 +23,52 @@ a {
     grid-column: 2;
     justify-self: center;
 }
-#auth-panel {
+#session-banner {
     grid-column: 3;
     justify-self: end;
+    margin: 0;
+}
+
+#display-name-form {
     display: flex;
-    flex-direction: row;
     align-items: center;
-    column-gap: 10px;
+    gap: 6px;
 }
 
-/* login style rules */
-#show-login-button{
-    width: 60px;
-    height: 40px;
+#display-name {
+    width: 130px;
 }
 
-#login-overlay{
+#participant-settings {
+    align-self: center;
+    margin-top: 32px;
+    text-align: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+#participant-settings h2 {
+    flex-basis: 100%;
+    margin-bottom: 0;
+}
+
+#login-link-status {
+    flex-basis: 100%;
+    margin: 0;
+}
+
+/* session and login-link controls */
+#save-display-name-button,
+#show-login-link-button{
+    background-color: #464646;
+    color: #e0e0e0;
+}
+
+#login-link-panel{
+    position: relative;
     display: flex;
     flex-direction: column;
     width: 360px;
@@ -53,25 +83,9 @@ a {
 [hidden] {
     display: none !important;
 }
-#login-overlay-header h2 {
+#login-link-panel h2 {
     margin: 0;
-}
-#login-overlay-header{
-    display: flex;
-    flex-direction: row;
-    justify-content: space-between;
-    /* align-items: center; */
-}
-#login-form{
-    display: flex;
-    flex-direction: column;
-    align-items: stretch;
-}
-.login-form-element{
-    display: grid;
-    grid-template-columns: 110px 1fr;
-    column-gap: 10px;
-    align-items: center;
+    text-align: center;
 }
 input{
     background-color: rgb(158, 158, 158);
@@ -79,11 +93,14 @@ input{
 select{
     background-color: rgb(158, 158, 158);
 }
-#login-button{
+#copy-login-link-button{
     /* border-radius: 8px; */
     background-color: transparent   ;
 }
-#close-login-button{
+#close-login-link-button{
+    position: absolute;
+    top: 4px;
+    right: 4px;
     border-radius: 8px;
     background-color: transparent;
 }
@@ -94,7 +111,7 @@ select{
     row-gap: 18px;
 }
 
-#submission-countdown{
+#prediction-countdown{
     text-align: center;
 }
 
@@ -162,16 +179,24 @@ select{
 }
 
 #privacy-notice h2 {
+    grid-column: 1;
     margin: 0 0 6px;
     font-size: 18px;
 }
 
 #privacy-notice p {
+    grid-column: 1;
     margin: 0 0 6px;
     line-height: 1.35;
 }
 
+#privacy-notice a {
+    grid-column: 1;
+}
+
 #privacy-notice-dismiss {
+    grid-column: 2;
+    grid-row: 1 / span 3;
     min-width: 76px;
     height: 38px;
 }
@@ -204,7 +229,7 @@ select{
     }
 
     .site-header > h1,
-    #auth-panel {
+    #session-banner {
         grid-column: 1;
         justify-self: center;
     }
