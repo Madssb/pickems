@@ -88,7 +88,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-PREDICTION_DEADLINE = datetime(2026, 6, 6, 13, 0, tzinfo=timezone.utc)
+PREDICTION_DEADLINE = datetime(2026, 6, 6, 12, 0, tzinfo=timezone.utc)
 
 
 def reject_after_prediction_deadline() -> None:

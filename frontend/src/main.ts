@@ -21,7 +21,7 @@ type Questions = Record<string, QuestionGroup>;
 const teams = teams_ as Teams;
 const questions = questions_ as Questions;
 const teamNames = Object.keys(teams);
-const predictionDeadline = new Date('2026-06-06T13:00:00Z');
+const predictionDeadline = new Date('2026-06-06T12:00:00Z');
 
 type LoginLinkResponse = {
   login_url: string;
