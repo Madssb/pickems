@@ -85,6 +85,10 @@ async function explainFailedResponse(response: Response): Promise<Error> {
 const apiBaseUrl = getApiBaseUrl();
 const privacyNoticeStorageKey = 'pickems-privacy-notice-dismissed';
 
+function predictionsAreClosed(): boolean {
+  return Date.now() >= predictionDeadline.getTime();
+}
+
 function setupPrivacyNotice() {
   const privacyNotice = document.querySelector<HTMLElement>('#privacy-notice');
   const dismissButton = document.querySelector<HTMLButtonElement>('#privacy-notice-dismiss');
@@ -424,6 +428,7 @@ function setupPredictionCountdown() {
 
     if (millisecondsRemaining <= 0) {
       countdownElement.textContent = 'Predictions are closed.';
+      setPredictionControlsDisabled(true);
       return;
     }
 
@@ -432,6 +437,16 @@ function setupPredictionCountdown() {
 
   renderCountdown();
   window.setInterval(renderCountdown, 1000);
+}
+
+function setPredictionControlsDisabled(disabled: boolean) {
+  const predictionControls = document.querySelectorAll<HTMLSelectElement>(
+    '.ranking-select, [data-prediction-field]',
+  );
+
+  predictionControls.forEach((control) => {
+    control.disabled = disabled;
+  });
 }
 
 function collectPredictions(): PredictionsPayload {
@@ -465,6 +480,12 @@ function setSaveStatus(message: string) {
 }
 
 async function savePredictions() {
+  if (predictionsAreClosed()) {
+    setPredictionControlsDisabled(true);
+    setSaveStatus('Predictions are closed. Showing saved picks.');
+    return;
+  }
+
   setSaveStatus('Saving...');
 
   try {
@@ -506,6 +527,12 @@ function setupPredictionAutosave() {
   let saveTimeout: number | undefined;
 
   function scheduleSave() {
+    if (predictionsAreClosed()) {
+      setPredictionControlsDisabled(true);
+      setSaveStatus('Predictions are closed. Showing saved picks.');
+      return;
+    }
+
     setSaveStatus('Unsaved changes...');
 
     if (saveTimeout !== undefined) {
@@ -519,7 +546,17 @@ function setupPredictionAutosave() {
   questionsPanel.addEventListener('change', scheduleSave);
 }
 
-async function hydratePredictions(rankingControls: RankingControls) {
+function hasSavedPredictions(predictions: PredictionsPayload): boolean {
+  if (predictions.team_rankings.some((teamName) => teamName.trim() !== '')) {
+    return true;
+  }
+
+  return Object.entries(predictions).some(([fieldName, value]) => (
+    fieldName !== 'team_rankings' && typeof value === 'string' && value.trim() !== ''
+  ));
+}
+
+async function hydratePredictions(rankingControls: RankingControls): Promise<boolean> {
   try {
     const response = await fetch(`${apiBaseUrl}/predictions`, {
       credentials: 'include',
@@ -527,7 +564,7 @@ async function hydratePredictions(rankingControls: RankingControls) {
 
     if (response.status === 401) {
       setSaveStatus('Could not find this browser session.');
-      return;
+      return false;
     }
 
     if (!response.ok) {
@@ -548,14 +585,13 @@ async function hydratePredictions(rankingControls: RankingControls) {
     });
 
     setSaveStatus('');
+    return hasSavedPredictions(predictions);
   } catch (error) {
     console.error(error);
     setSaveStatus('Could not load saved predictions.');
+    return false;
   }
 }
-
-
-
 
 
 setupPrivacyNotice();
@@ -564,9 +600,22 @@ setupDisplayNameForm();
 setupPredictionCountdown();
 const rankingControls = SetupRankings();
 SetupQuestions();
-setupPredictionAutosave();
 const participant = await getOrCreateParticipant();
 setupSessionPanel(participant);
 if (participant) {
-  await hydratePredictions(rankingControls);
+  const hasSavedPicks = await hydratePredictions(rankingControls);
+
+  if (predictionsAreClosed()) {
+    setSaveStatus(
+      hasSavedPicks
+        ? 'Predictions are closed. Showing saved picks.'
+        : 'Predictions are closed. No saved picks for this browser.',
+    );
+  } else {
+    setupPredictionAutosave();
+  }
+}
+
+if (predictionsAreClosed()) {
+  setPredictionControlsDisabled(true);
 }
